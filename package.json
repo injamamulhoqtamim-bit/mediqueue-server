@@ -1,0 +1,19 @@
+{
+  "name": "mediqueue-server",
+  "version": "1.0.0",
+  "description": "MediQueue Backend Node Express Server Platform",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "google-auth-library": "^10.6.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.2.0"
+  }
+}
