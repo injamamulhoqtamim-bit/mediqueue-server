@@ -108,27 +108,53 @@ app.post('/google-login', async (req, res) => {
         }
 
         // ডাটাবেজে ইউজার চেক করা
-        const existingUser = await userCollection.findOne({ email: payload.email });
-        let dbUser = existingUser;
+const existingUser = await userCollection.findOne({
+    email: payload.email
+});
 
-        if (!existingUser) {
-            const newUser = {
+let dbUser;
+
+if (existingUser) {
+
+    // Google account এর latest name + photo update
+    await userCollection.updateOne(
+        { email: payload.email },
+        {
+            $set: {
                 name: payload.name,
-                email: payload.email,
-                photo: payload.picture,
-                createdAt: new Date(),
-                role: 'student'
-            };
-            const result = await userCollection.insertOne(newUser);
-            dbUser = { _id: result.insertedId, ...newUser };
+                photo: payload.picture
+            }
         }
+    );
+
+    dbUser = await userCollection.findOne({
+        email: payload.email
+    });
+
+} else {
+
+    const newUser = {
+        name: payload.name,
+        email: payload.email,
+        photo: payload.picture,
+        createdAt: new Date(),
+        role: 'student'
+    };
+
+    const result = await userCollection.insertOne(newUser);
+
+    dbUser = {
+        _id: result.insertedId,
+        ...newUser
+    };
+}
 
         const user = {
-            id: dbUser._id,
-            email: dbUser.email,
-            name: dbUser.name,
-            picture: dbUser.photo || payload.picture,
-        };
+    id: dbUser._id,
+    email: payload.email,
+    name: payload.name,
+    picture: payload.picture,
+};
 
         // JWT সাইন করা
         const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '7d' });
