@@ -382,22 +382,29 @@ app.get('/my-tutors', verifyToken, async (req, res) => {
 // BOOKINGS ROUTES
 app.post('/bookings', verifyToken, async (req, res) => {
     try {
+
+        console.log("BOOKING BODY:", req.body);
+
         const booking = req.body;
 
-const newBooking = {
-    tutorId: booking.tutorId,
-    tutorName: booking.tutorName,
-    tutorPhoto: booking.tutorPhoto || '',
-    studentName: booking.studentName,
-    studentEmail: req.user.email,
-    phone: booking.phone,
-    specialNote: booking.specialNote || '',
-    status: 'booked',
-    bookingDate: new Date()
-};
+        const newBooking = {
+            tutorId: booking.tutorId,
+            tutorName: booking.tutorName,
+            tutorPhoto: booking.tutorPhoto || '',
+            studentName: booking.studentName,
+            studentEmail: req.user.email,
+            phone: booking.phone,
+            specialNote: booking.specialNote || '',
+            status: 'booked',
+            bookingDate: new Date()
+        };
 
-const result = await bookingCollection.insertOne(newBooking);
+        console.log("NEW BOOKING:", newBooking);
+
+        const result = await bookingCollection.insertOne(newBooking);
+
         res.send(result);
+
     } catch (error) {
         console.log(error);
         res.status(500).send({ message: 'Failed to create booking' });
