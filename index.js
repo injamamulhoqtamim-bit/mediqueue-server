@@ -83,7 +83,7 @@ async function startServer() {
 }
 
 startServer();
-connectDB();
+
 
 // 🛠️ GOOGLE LOGIN (Axios Version - Ultimate Stability for useGoogleLogin)
 // 🛠️ GOOGLE LOGIN (Ultimate Stable Version using Axios)
