@@ -2,15 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
-const axios = require('axios'); // 🌟 fetch এর বদলে রেন্ডার সার্ভারের জন্য স্টেবল axios ইমপোর্ট করা হলো
+const axios = require('axios'); // 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const dns = require('dns');
 const bcrypt = require('bcrypt');
 
 dotenv.config();
 
-// Cloudflare DNS
-dns.setServers(['1.1.1.1', '8.8.8.8']);
+// Cloudflare DNS dns.setServers(['1.1.1.1', '8.8.8.8']);
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -66,16 +65,18 @@ const verifyToken = (req, res, next) => {
 async function connectDB() {
     try {
         await client.connect();
+
         console.log('✅ MongoDB Connected');
 
         const db = client.db('mediQueueDB');
+
         tutorCollection = db.collection('tutors');
         bookingCollection = db.collection('bookings');
         userCollection = db.collection('users');
 
     } catch (error) {
-        console.log('❌ MongoDB Error');
-        console.log(error);
+        console.error('❌ MongoDB Connection Failed');
+        console.error(error);
     }
 }
 connectDB();
@@ -87,13 +88,13 @@ app.post('/google-login', async (req, res) => {
 
          console.log("BODY:", req.body);
         const { credential } = req.body;
-        console.log("TOKEN:", credential); // ফ্রন্টএন্ড থেকে আসা টোকেন
+        console.log("TOKEN:", credential); // 
 
         if (!credential) {
             return res.status(400).send({ message: 'Access Token is required' });
         }
 
-        // গুগলের অফিসিয়াল ওঅথ২ ইউজারইনফো এন্ডপয়েন্টে রিকোয়েস্ট পাঠানো হচ্ছে
+        // 
         const googleResponse = await axios.get(`https://www.googleapis.com/oauth2/v3/userinfo`, {
             headers: {
                 Authorization: `Bearer ${credential}`
@@ -107,7 +108,7 @@ app.post('/google-login', async (req, res) => {
             return res.status(401).send({ message: 'Invalid Google Access Token' });
         }
 
-        // ডাটাবেজে ইউজার চেক করা
+        // 
 const existingUser = await userCollection.findOne({
     email: payload.email
 });
@@ -156,7 +157,7 @@ if (existingUser) {
     picture: payload.picture,
 };
 
-        // JWT সাইন করা
+        // JWT 
         const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.send({ token, user });
 
@@ -253,9 +254,17 @@ app.get('/tutors', async (req, res) => {
     }
 });
 
+//  TUTOR DETAILS GET ROUTE 
 app.get('/tutors/:id', async (req, res) => {
     try {
         const id = req.params.id;
+
+        // 🌟 চেক করা হচ্ছে ID টি MongoDB ObjectId এর নিয়মে সঠিক কি না
+        if (!ObjectId.isValid(id)) {
+            console.log(`⚠️ Invalid ObjectId received: ${id}`);
+            return res.status(400).send({ message: 'Invalid Tutor ID format' });
+        }
+
         const tutor = await tutorCollection.findOne({ _id: new ObjectId(id) });
 
         if (!tutor) {
@@ -267,6 +276,10 @@ app.get('/tutors/:id', async (req, res) => {
         res.status(500).send({ message: 'Failed to load tutor details' });
     }
 });
+
+
+
+
 
 // SECURED TUTOR ROUTES (Token Required)
 app.post('/tutors', verifyToken, async (req, res) => {
@@ -284,20 +297,50 @@ app.put('/tutors/:id', verifyToken, async (req, res) => {
     try {
         const id = req.params.id;
         const updatedTutor = req.body;
+
+        // ObjectId Validation
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).send({
+                message: 'Invalid Tutor ID'
+            });
+        }
+
+        // Ownership Check
         const result = await tutorCollection.updateOne(
-            { _id: new ObjectId(id) },
-            { $set: updatedTutor }
+            {
+                _id: new ObjectId(id),
+                userEmail: req.user.email
+            },
+            {
+                $set: updatedTutor
+            }
         );
+
+        if (result.matchedCount === 0) {
+            return res.status(403).send({
+                message: 'You can only update your own tutor'
+            });
+        }
+
         res.send(result);
+
     } catch (error) {
         console.log(error);
-        res.status(500).send({ message: 'Failed to update tutor' });
+        res.status(500).send({
+            message: 'Failed to update tutor'
+        });
     }
 });
 
 app.delete('/tutors/:id', verifyToken, async (req, res) => {
     try {
         const id = req.params.id;
+
+if (!ObjectId.isValid(id)) {
+    return res.status(400).send({
+        message: 'Invalid Tutor ID'
+    });
+}
         
         const query = { 
             _id: new ObjectId(id),
@@ -340,7 +383,20 @@ app.get('/my-tutors', verifyToken, async (req, res) => {
 app.post('/bookings', verifyToken, async (req, res) => {
     try {
         const booking = req.body;
-        const result = await bookingCollection.insertOne(booking);
+
+const newBooking = {
+    tutorId: booking.tutorId,
+    tutorName: booking.tutorName,
+    tutorPhoto: booking.tutorPhoto || '',
+    studentName: booking.studentName,
+    studentEmail: req.user.email,
+    phone: booking.phone,
+    specialNote: booking.specialNote || '',
+    status: 'booked',
+    bookingDate: new Date()
+};
+
+const result = await bookingCollection.insertOne(newBooking);
         res.send(result);
     } catch (error) {
         console.log(error);
@@ -369,16 +425,41 @@ app.get('/my-bookings', verifyToken, async (req, res) => {
 app.patch('/bookings/:id', verifyToken, async (req, res) => {
     try {
         const id = req.params.id;
+
+        if (!ObjectId.isValid(id)) {
+            return res.status(400).send({
+                message: 'Invalid Booking ID'
+            });
+        }
+
         const result = await bookingCollection.updateOne(
-            { _id: new ObjectId(id) },
-            { $set: { status: 'cancelled' } }
+            {
+                _id: new ObjectId(id),
+                studentEmail: req.user.email
+            },
+            {
+                $set: {
+                    status: 'cancelled'
+                }
+            }
         );
+
+        if (result.matchedCount === 0) {
+            return res.status(403).send({
+                message: 'You can only cancel your own booking'
+            });
+        }
+
         res.send(result);
+
     } catch (error) {
         console.log('Booking Cancel Error', error);
-        res.status(500).send({ message: 'Failed to cancel booking' });
+        res.status(500).send({
+            message: 'Failed to cancel booking'
+        });
     }
 });
+
 
 app.get('/', (req, res) => {
     res.send('MediQueue Main Gateway Active');
@@ -389,10 +470,11 @@ app.listen(port, () => {
 });
 
 // DNS TEST
+/*
 dns.resolveSrv(
     '_mongodb._tcp.cluster0.vixw6gg.mongodb.net',
     (err, records) => {
-        console.log('DNS TEST');
         console.log(err || records);
     }
 );
+*/
