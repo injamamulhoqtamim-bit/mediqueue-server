@@ -14,8 +14,21 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+// আপনার নতুন Vercel ডোমেন এবং লোকালহোস্ট উভয়কেই অনুমতি দেওয়া হলো
+const allowedOrigins = [
+    'http://localhost:5173', // লোকালহোস্টে ডেভেলপমেন্ট করার জন্য
+    'https://teachersfinding.vercel.app' // আপনার নতুন ডোমেন
+];
+
 app.use(cors({
-    origin: true,
+    origin: function (origin, callback) {
+        // রিকোয়েস্টের অরিজিন যদি অ্যালাউড লিস্টে থাকে অথবা লোকাল কোনো রিকোয়েস্ট (যেমন Postman) হয়
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
 }));
 
@@ -476,9 +489,9 @@ app.get('/', (req, res) => {
     res.send('MediQueue Main Gateway Active');
 });
 
-app.listen(port, () => {
-    console.log(`🚀 Server running on port ${port}`);
-});
+// app.listen(port, () => {
+//     console.log(`🚀 Server running on port ${port}`);
+// });
 
 // DNS TEST
 /*
