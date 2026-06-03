@@ -62,10 +62,9 @@ const verifyToken = (req, res, next) => {
     );
 };
 
-async function connectDB() {
+async function startServer() {
     try {
         await client.connect();
-
         console.log('✅ MongoDB Connected');
 
         const db = client.db('mediQueueDB');
@@ -74,11 +73,16 @@ async function connectDB() {
         bookingCollection = db.collection('bookings');
         userCollection = db.collection('users');
 
+        app.listen(port, () => {
+            console.log(`🚀 Server running on port ${port}`);
+        });
+
     } catch (error) {
-        console.error('❌ MongoDB Connection Failed');
-        console.error(error);
+        console.error('❌ MongoDB Connection Failed', error);
     }
 }
+
+startServer();
 connectDB();
 
 // 🛠️ GOOGLE LOGIN (Axios Version - Ultimate Stability for useGoogleLogin)
@@ -390,7 +394,7 @@ app.post('/bookings', verifyToken, async (req, res) => {
         const newBooking = {
             tutorId: booking.tutorId,
             tutorName: booking.tutorName,
-            tutorPhoto: booking.tutorPhoto || '',
+            tutorPhoto: booking.tutorPhoto ?? booking.tutorPhotoUrl ?? '',
             studentName: booking.studentName,
             studentEmail: req.user.email,
             phone: booking.phone,
