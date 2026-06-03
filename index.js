@@ -14,15 +14,15 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// আপনার নতুন Vercel ডোমেন এবং লোকালহোস্ট উভয়কেই অনুমতি দেওয়া হলো
+// CORS Configuration with Dynamic Origin Validation
 const allowedOrigins = [
-    'http://localhost:5173', // লোকালহোস্টে ডেভেলপমেন্ট করার জন্য
-    'https://teachersfinding.vercel.app' // আপনার নতুন ডোমেন
+    'http://localhost:5173', // local development
+    'https://teachersfinding.vercel.app' // new domain updated for production
 ];
 
 app.use(cors({
     origin: function (origin, callback) {
-        // রিকোয়েস্টের অরিজিন যদি অ্যালাউড লিস্টে থাকে অথবা লোকাল কোনো রিকোয়েস্ট (যেমন Postman) হয়
+        // 
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
@@ -98,8 +98,8 @@ async function startServer() {
 startServer();
 
 
-// 🛠️ GOOGLE LOGIN (Axios Version - Ultimate Stability for useGoogleLogin)
-// 🛠️ GOOGLE LOGIN (Ultimate Stable Version using Axios)
+// GOOGLE LOGIN (Axios Version - Ultimate Stability for useGoogleLogin)
+//  GOOGLE LOGIN (Ultimate Stable Version using Axios)
 app.post('/google-login', async (req, res) => {
     try {
 
